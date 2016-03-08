@@ -10,7 +10,7 @@ Add NX.cs to your project.
 
 ## class TComparer\<T\>, class TEquialityComparer\<T\>
 
-Grab ```IComparer<T>``` from ```Func<T, T, bool>```.
+Grab ```IComparer<T>``` from ```Func<T, T, int>```.
 
 ## static class New
 
@@ -53,9 +53,9 @@ example:
 
 ```csharp
 string s =
-    from x in File.OpenRead("a.txt")
-    from y in new StreamReader(x)
-    return y.ReadToEnd();
+    from x in File.OpenRead("a.txt").Use()
+    from y in new StreamReader(x).Use()
+    select y.ReadToEnd();
 ```
 
 Contains ```Use```, ```Map```, ```SelectMany```, and so on.
@@ -64,7 +64,7 @@ Contains ```Use```, ```Map```, ```SelectMany```, and so on.
 
 *True* unit type.
 
-## class Option\<T\>, static class Option
+## struct Option\<T\>, static class Option
 
 More convenient optional value.
 
