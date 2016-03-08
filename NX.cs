@@ -28,7 +28,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Diagnostics;
-using System.Threading;
 
 namespace NX
 {
@@ -636,10 +635,10 @@ namespace NX
             where T2 : IDisposable
         {
             Map2(source, second(source.Source), (x, y) =>
-                {
-                    selector(x, y);
-                    return Unit.Value;
-                });
+            {
+                selector(x, y);
+                return Unit.Value;
+            });
         }
 
         public static TR Select<T, TR>(this Using<T> source, Func<T, TR> selector)
@@ -659,7 +658,7 @@ namespace NX
 
         public Exception InnerException { get; set; }
 
-        public Option(T a = default(T))
+        public Option(T a)
         {
             if (a is Object && a == null)
             {
@@ -712,6 +711,16 @@ namespace NX
                 return false;
         }
 
+        public override string ToString()
+        {
+            if (HasValue)
+                return string.Format("Some({0})", Value);
+            else if (HasException)
+                return string.Format("None(\"{0}\")", InnerException.Message);
+            else
+                return "None";
+        }
+
         public override bool Equals(object obj)
         {
             if (obj is Option<T>)
@@ -733,6 +742,32 @@ namespace NX
         public static bool operator !=(Option<T> a, Option<T> b)
         {
             return !a.Equals(b);
+        }
+
+        public static Option<T> operator |(Option<T> a, Option<T> b)
+        {
+            return a.HasValue ? a : b;
+        }
+
+        public static bool operator true(Option<T> a)
+        {
+            return a.HasValue;
+        }
+
+        public static bool operator false(Option<T> a)
+        {
+            return !a.HasValue;
+        }
+
+        /// <summary>
+        /// You can also use <code>Option.None</code>.
+        /// </summary>
+        public static Option<T> None
+        {
+            get
+            {
+                return new Option<T>();
+            }
         }
     }
 
@@ -787,6 +822,9 @@ namespace NX
             return Some(Unit.Value);
         }
 
+        /// <summary>
+        /// You can also use <code>Option&lt;T&gt;.None</code>.
+        /// </summary>
         public static Option<DummyNX> None
         {
             get
@@ -802,7 +840,7 @@ namespace NX
         }
 
         /// <summary>
-        /// If <paramref name="f"/> can throw an exception, use <code>Try</code> instead.
+        /// If <paramref name="f"/> can throw an exception, use <code>TryMap</code> instead.
         /// </summary>
         public static Option<T2> Map<T, T2>(this Option<T> a, Func<T, T2> f)
         {
@@ -811,11 +849,11 @@ namespace NX
 
         public static Option<T2> Select<T, T2>(this Option<T> a, Func<T, T2> f)
         {
-            return a.Try(f);
+            return a.TryMap(f);
         }
 
         /// <summary>
-        /// If <paramref name="f"/> can throw an exception, use <code>Try</code> instead.
+        /// If <paramref name="f"/> can throw an exception, use <code>TryMap2</code> instead.
         /// </summary>
         public static Option<TR> Map2<T1, T2, TR>(this Option<T1> a, Option<T2> b, Func<T1, T2, TR> f)
         {
@@ -824,7 +862,7 @@ namespace NX
 
         public static Option<TR> SelectMany<T1, T2, TR>(this Option<T1> a, Func<T1, Option<T2>> bf, Func<T1, T2, TR> f)
         {
-            return a.HasValue ? a.Map2(bf(a.Value), f) : None;
+            return a.TryMap2(bf(a.Value), f);
         }
 
         public static Option<T2> Bind<T, T2>(this Option<T> a, Func<T, Option<T2>> f)
@@ -843,7 +881,7 @@ namespace NX
         }
 
         /// <summary>
-        /// If <paramref name="f"/> can throw an exception, use <code>Try</code> instead.
+        /// If <paramref name="f"/> can throw an exception, use <code>TryMapDefault</code> instead.
         /// </summary>
         public static T2 MapDefault<T, T2>(this Option<T> a, Func<T, T2> f, T2 b)
         {
@@ -876,18 +914,17 @@ namespace NX
                 none(a.HasException ? Some(a.InnerException) : None);
         }
 
+        /// <summary>
+        /// Alias of <code>TryMap</code>.
+        /// </summary>
+        public static Option<TR> Try<T, TR>(this Option<T> a, Func<T, TR> f)
+        {
+            return a.TryMap(f);
+        }
+
         public static Option<TR> Try<T, TR>(this T t, Func<T, TR> f)
         {
             return Try(() => f(t));
-        }
-
-        public static Option<TR> Try<T, TR>(this Option<T> t, Func<T, TR> f)
-        {
-            return !t.HasValue ?
-                t.HasException ?
-                    new Option<TR>(t.InnerException, false) :
-                    new Option<TR>(new NullReferenceException("This is None<" + typeof(T).Name + ">"), false)
-            : Try(() => f(t.Value));
         }
 
         public static Option<T> Try<T>(this Func<T> f)
@@ -902,18 +939,17 @@ namespace NX
             }
         }
 
+        /// <summary>
+        /// Alias of <code>TryMap</code>.
+        /// </summary>
+        public static Option<Unit> Try<T, TR>(this Option<T> a, Action<T> f)
+        {
+            return a.TryMap(f);
+        }
+
         public static Option<Unit> Try<T>(this T t, Action<T> f)
         {
             return Try(() => f(t));
-        }
-
-        public static Option<Unit> Try<T>(this Option<T> t, Action<T> f)
-        {
-            return !t.HasValue ? 
-                t.HasException ? 
-                    new Option<Unit>(t.InnerException, false) :
-                    new Option<Unit>(new NullReferenceException("This is None<" + typeof(T).Name + ">"), false)
-                : Try(() => f(t.Value));
         }
 
         public static Option<Unit> Try(this Action f)
@@ -927,6 +963,42 @@ namespace NX
             {
                 return new Option<Unit>(e, false);
             }
+        }
+
+        public static Option<TR> TryMap<T, TR>(this Option<T> t, Func<T, TR> f)
+        {
+            return !t.HasValue ?
+                t.HasException ?
+                new Option<TR>(t.InnerException, false) :
+                new Option<TR>(new NullReferenceException("This is None<" + typeof(T).Name + ">"), false)
+                    : Try(() => f(t.Value));
+        }
+
+        public static Option<Unit> TryMap<T>(this Option<T> t, Action<T> f)
+        {
+            return !t.HasValue ? 
+                t.HasException ? 
+                new Option<Unit>(t.InnerException, false) :
+                new Option<Unit>(new NullReferenceException("This is None<" + typeof(T).Name + ">"), false)
+                    : Try(() => f(t.Value));
+        }
+
+        public static Option<TR> TryMap2<T1, T2, TR>(this Option<T1> a, Option<T2> b, Func<T1, T2, TR> f)
+        {
+            return a.HasValue && b.HasValue 
+                ? Try(() => f(a.Value, b.Value)) 
+                    : a.HasValue 
+                ? b.HasException 
+                ? new Option<TR>(b.InnerException, false) 
+                    : new Option<TR>(new NullReferenceException("Second value is None<" + typeof(T1).Name + ">"), false)
+                    : a.HasException
+                ? new Option<TR>(a.InnerException, false) 
+                    : new Option<TR>(new NullReferenceException("First value is None<" + typeof(T2).Name + ">"), false);
+        }
+
+        public static TR TryMapDefault<T, TR>(this Option<T> t, Func<T, TR> f, TR d)
+        {
+            return t.TryMap(f).Default(d);
         }
     }
 
