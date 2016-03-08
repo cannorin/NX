@@ -28,6 +28,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Diagnostics;
+using System.Threading;
 
 namespace NX
 {
@@ -71,6 +72,14 @@ namespace NX
         public static T Block<T>(Func<T> f)
         {
             return f();
+        }
+    }
+
+    public static class StringNX
+    {
+        public static string[] Split(this string s, bool removeEmptyEntries, params string[] seps)
+        {
+            return s.Split(seps, removeEmptyEntries ? StringSplitOptions.RemoveEmptyEntries : StringSplitOptions.None);
         }
     }
 
