@@ -28,8 +28,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Diagnostics;
-using Microsoft.Build.BuildEngine;
-using System.Net.Mail;
 
 namespace NX
 {
