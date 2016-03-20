@@ -28,6 +28,8 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Diagnostics;
+using Microsoft.Build.BuildEngine;
+using System.Net.Mail;
 
 namespace NX
 {
@@ -74,11 +76,50 @@ namespace NX
         }
     }
 
+    public class StringBuilderNX
+    {
+        string buf;
+
+        public override string ToString()
+        {
+            return buf;
+        }
+
+        public StringBuilderNX(string s = "")
+        {
+            buf = s;
+        }
+
+        public void Write(string s, params object[] args)
+        {
+            buf += string.Format(s, args);
+        }
+
+        public void WriteLine(string s = "")
+        {
+            buf += s;
+            buf += Environment.NewLine;
+        }
+
+        public void WriteLine(string s, params object[] args)
+        {
+            buf += string.Format(s, args);
+            buf += Environment.NewLine;
+        }
+    }
+
     public static class StringNX
     {
         public static string[] Split(this string s, bool removeEmptyEntries, params string[] seps)
         {
             return s.Split(seps, removeEmptyEntries ? StringSplitOptions.RemoveEmptyEntries : StringSplitOptions.None);
+        }
+
+        public static string Build(Action<StringBuilderNX> f)
+        {
+            var sb = new StringBuilderNX();
+            f(sb);
+            return sb.ToString();
         }
     }
 
@@ -635,10 +676,10 @@ namespace NX
             where T2 : IDisposable
         {
             Map2(source, second(source.Source), (x, y) =>
-            {
-                selector(x, y);
-                return Unit.Value;
-            });
+                {
+                    selector(x, y);
+                    return Unit.Value;
+                });
         }
 
         public static TR Select<T, TR>(this Using<T> source, Func<T, TR> selector)
@@ -1021,7 +1062,11 @@ namespace NX
     {
         public static string GetUnixEnvironmentVariable(string variable)
         {
-            return Shell.Eval("sh", "-c", string.Format("'echo ${0}'", variable)).Replace(Environment.NewLine, "");
+            var env = Environment.GetEnvironmentVariable(variable);
+            if (!string.IsNullOrEmpty(env))
+                return env;
+            else
+                return Shell.Eval("sh", "-c", string.Format("'echo ${0}'", variable)).Replace(Environment.NewLine, "");
         }
 
         public static string Eval(string command, params string[] args)
