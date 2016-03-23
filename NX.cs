@@ -28,6 +28,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Diagnostics;
+using log4net.Util;
 
 namespace NX
 {
@@ -366,9 +367,9 @@ namespace NX
         }
 
 
-        public static T Find<T>(this IEnumerable<T> seq, Func<T, bool> f)
+        public static Option<T> Find<T>(this IEnumerable<T> seq, Func<T, bool> f)
         {
-            return seq.First(f);
+            return seq.Map(Option.Some).FirstOrDefault(x => x.Match(f, () => Option.None));
         }
 
         public static IEnumerable<T> Filter<T>(this IEnumerable<T> seq, Func<T, bool> f)
@@ -674,10 +675,10 @@ namespace NX
             where T2 : IDisposable
         {
             Map2(source, second(source.Source), (x, y) =>
-                {
-                    selector(x, y);
-                    return Unit.Value;
-                });
+            {
+                selector(x, y);
+                return Unit.Value;
+            });
         }
 
         public static TR Select<T, TR>(this Using<T> source, Func<T, TR> selector)
