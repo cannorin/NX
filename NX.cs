@@ -369,7 +369,7 @@ namespace NX
 
         public static Option<T> Find<T>(this IEnumerable<T> seq, Func<T, bool> f)
         {
-            return seq.Map(Option.Some).FirstOrDefault(x => x.Match(f, () => Option.None));
+            return seq.Map(Option.Some).FirstOrDefault(x => x.Match(f, () => false));
         }
 
         public static IEnumerable<T> Filter<T>(this IEnumerable<T> seq, Func<T, bool> f)
