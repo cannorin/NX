@@ -28,7 +28,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Diagnostics;
-using log4net.Util;
 
 namespace NX
 {
@@ -578,7 +577,7 @@ namespace NX
 
         static IEnumerable<DiffItem<TI>> CreateItems<TI>(IEnumerable<TI> a, IEnumerable<TI> b, IEqualityComparer<TI> comp)
         {
-            var c = a.Intersect(b);
+            var c = b.Filter(x => a.Any(y => comp.Equals(x, y))).ToArray();
             if (c.LengthNX() == 0)
             {
                 foreach (var x in a)
