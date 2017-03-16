@@ -46,6 +46,14 @@ namespace NX
         }
     }
 
+    public static class TComparer
+    {
+        public static TComparer<T> Create<T>(Func<T, T, int> f)
+        {
+            return new TComparer<T>(f);
+        }
+    }
+
     public class TEquialityComparer<T> : IEqualityComparer<T>
     {
         public Func<T, T, bool> Comparer { get; private set; }
@@ -63,6 +71,14 @@ namespace NX
         public int GetHashCode(T a)
         {
             return a.GetHashCode();
+        }
+    }
+
+    public static class TEquialityComparer
+    {
+        public static TEquialityComparer<T> Create<T> (Func<T, T, bool> f)
+        {
+            return new TEquialityComparer<T>(f);
         }
     }
 
@@ -118,6 +134,25 @@ namespace NX
             var sb = new StringBuilderNX();
             f(sb);
             return sb.ToString();
+        }
+
+        public static string Repeat(this string s, int count)
+        {
+            if (count > 10)
+            {
+                var sb = new StringBuilder();
+                Seq.Repeat(count).Iter(_ => sb.Append(s));
+                return sb.ToString();
+            }
+            else if (count <= 0)
+                return "";
+            else
+            {
+                var _s = s;
+                for (var i = 1; i < count; i++)
+                    _s += s;
+                return _s;
+            }
         }
     }
 
@@ -259,6 +294,15 @@ namespace NX
             return seq.SelectMany(x => x);
         }
 
+        public static IEnumerable<T2> Choose<T1, T2>(this IEnumerable<T1> seq, Func<T1, Option<T2>> f)
+        {
+            return seq.Map(f).Filter(x => x.HasValue).Map(x => x.Value); 
+        }
+
+        public static Option<T> FindSome<T>(this IEnumerable<Option<T>> seq)
+        {
+            return seq.Find(x => x.HasValue).Flatten();
+        }
 
         public static IEnumerable<T2> Map<T1, T2>(this IEnumerable<T1> seq, Func<T1, T2> f)
         {
@@ -274,6 +318,16 @@ namespace NX
         {
             foreach (var x in seq)
                 f(x);
+        }
+
+        public static void IterI<T>(this IEnumerable<T> seq, Action<T, int> f)
+        {
+            var i = 0;
+            foreach(var x in seq)
+            {
+                f(x, i);
+                i++;
+            }
         }
 
         public static T FoldL<T>(this IEnumerable<T> seq, Func<T, T, T> f)
@@ -314,6 +368,22 @@ namespace NX
             bool b1, b2;
             while ((b1 = e1.MoveNext()) & (b2 = e2.MoveNext()))
                 f(e1.Current, e2.Current);
+
+            if (b1 != b2)
+                throw new ArgumentOutOfRangeException("s1", "Length not match");
+        }
+
+        public static void Iter2I<T1, T2>(this IEnumerable<T1> s1, IEnumerable<T2> s2, Action<T1, T2, int> f)
+        {
+            var e1 = s1.GetEnumerator();
+            var e2 = s2.GetEnumerator();
+            var i = 0;
+            bool b1, b2;
+            while ((b1 = e1.MoveNext()) & (b2 = e2.MoveNext()))
+            {
+                f(e1.Current, e2.Current, i);
+                i++;
+            }
 
             if (b1 != b2)
                 throw new ArgumentOutOfRangeException("s1", "Length not match");
@@ -891,6 +961,11 @@ namespace NX
             return a.TryMap(f);
         }
 
+        public static Option<T> Flatten<T>(this Option<Option<T>> a)
+        {
+            return a.Match(x => x, () => None);
+        }
+
         /// <summary>
         /// If <paramref name="f"/> can throw an exception, use <code>TryMap2</code> instead.
         /// </summary>
@@ -917,6 +992,29 @@ namespace NX
         public static T DefaultLazy<T>(this Option<T> a, Func<T> b)
         {
             return a.HasValue ? a.Value : b();
+        }
+
+        /// <summary>
+        /// throws NullReferenceException when None.
+        /// </summary>
+        public static T ForceUnwrap<T>(this Option<T> a)
+        {
+            if (a.HasValue)
+                return a.Value;
+            else
+                throw new NullReferenceException("This is None.");
+        }
+
+        /// <param name="aborter">You must abort execution (throw, Environment.Exit, etc) inside here. </param>
+        public static T AbortNone<T>(this Option<T> a, Action aborter)
+        {
+            if (a.HasValue)
+                return a.Value;
+            else
+            {
+                aborter();
+                throw new NotImplementedException("The aborter did not abort!");
+            }
         }
 
         /// <summary>
@@ -951,6 +1049,11 @@ namespace NX
                 some(a.Value);
             else
                 none(a.HasException ? Some(a.InnerException) : None);
+        }
+
+        public static Option<T> Overwrite<T>(this Option<T> a, T value)
+        {
+            return value.Some();
         }
 
         /// <summary>
