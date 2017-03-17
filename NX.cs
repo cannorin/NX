@@ -228,14 +228,14 @@ namespace NX
             return seq.LongCount();
         }
 
-        public static T Hd<T>(this IEnumerable<T> seq)
+        public static Option<T> Head<T>(this IEnumerable<T> seq)
         {
-            return seq.First();
+            return seq.Try<IEnumerable<T>, T>(Enumerable.First);
         }
 
-        public static T Tl<T>(this IEnumerable<T> seq)
+        public static Option<T> Tail<T>(this IEnumerable<T> seq)
         {
-            return seq.Last();
+            return seq.Try<IEnumerable<T>, T>(Enumerable.Last);
         }
 
         public static T Nth<T>(this IEnumerable<T> seq, int n)
