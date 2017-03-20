@@ -238,17 +238,17 @@ namespace NX
             return seq.Try<IEnumerable<T>, T>(Enumerable.Last);
         }
 
-        public static T Nth<T>(this IEnumerable<T> seq, int n)
+        public static Option<T> Nth<T>(this IEnumerable<T> seq, int n)
         {
             if (seq.GetEnumerator().Try(x => x.Reset()).HasException)
-                return seq.Skip(n).First();
+                return seq.Try(xs => xs.Skip(n).First());
             else
             {
                 var enumerable = seq.ToArray();
                 if (n > enumerable.Length - 1)
-                    throw new IndexOutOfRangeException();
+                    return Option.None;
                 else
-                    return enumerable[n];
+                    return enumerable[n].Some();
             }
         }
 
@@ -795,6 +795,11 @@ namespace NX
         public static implicit operator Option<T>(Option<DummyNX> d)
         {
             return new Option<T>();
+        }
+
+        public static implicit operator Option<T>(T a)
+        {
+            return new Option<T>(a);
         }
 
         public bool Equals(Option<T> other)
