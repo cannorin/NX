@@ -446,6 +446,11 @@ namespace NX
             return seq.Where(f);
         }
 
+        public static IEnumerable<T> FilterOut<T>(this IEnumerable<T> seq, Func<T, bool> f)
+        {
+            return seq.Where(x => !f(x));
+        }
+
         public static Tuple<IEnumerable<T>, IEnumerable<T>> Partition<T>(this IEnumerable<T> seq, Func<T, bool> f)
         {
             return Tuple.Create(seq.Where(f), seq.Where(x => !f(x)));
@@ -759,13 +764,13 @@ namespace NX
 
     public struct Option<T> : IEquatable<Option<T>>
     {
-        public bool HasValue { get; set; }
+        public bool HasValue { get; private set; }
 
-        public T Value { get; set; }
+        public T Value { get; private set; }
 
-        public bool HasException { get; set; }
+        public bool HasException { get; private set; }
 
-        public Exception InnerException { get; set; }
+        public Exception InnerException { get; private set; }
 
         public Option(T a)
         {
@@ -861,6 +866,11 @@ namespace NX
         public static Option<T> operator |(Option<T> a, Option<T> b)
         {
             return a.HasValue ? a : b;
+        }
+
+        public static Option<Tuple<T, T>> operator &(Option<T> a, Option<T> b)
+        {
+            return (a.HasValue && b.HasValue) ? Tuple.Create(a.Value, b.Value).Some() : Option.None;
         }
 
         public static bool operator true(Option<T> a)
@@ -1056,6 +1066,14 @@ namespace NX
                 none(a.HasException ? Some(a.InnerException) : None);
         }
 
+        public static bool Check<T>(this Option<T> a, Func<T, bool> pred)
+        {
+            if (a.HasValue)
+                return pred(a.Value);
+            else
+                return false;
+        }
+
         public static Option<T> Overwrite<T>(this Option<T> a, T value)
         {
             return value.Some();
@@ -1146,6 +1164,39 @@ namespace NX
         public static TR TryMapDefault<T, TR>(this Option<T> t, Func<T, TR> f, TR d)
         {
             return t.TryMap(f).Default(d);
+        }
+    }
+
+    public static class TupleNX
+    {
+        public static TR Merge <T1, T2, TR>(this Tuple<T1, T2> t, Func<T1, T2, TR> f)
+        {
+            return f(t.Item1, t.Item2);
+        }
+
+        public static TR Merge <T1, T2, T3, TR>(this Tuple<T1, T2, T3> t, Func<T1, T2, T3, TR> f)
+        {
+            return f(t.Item1, t.Item2, t.Item3);
+        }
+
+        public static TR Merge <T1, T2, T3, T4, TR>(this Tuple<T1, T2, T3, T4> t, Func<T1, T2, T3, T4, TR> f)
+        {
+            return f(t.Item1, t.Item2, t.Item3, t.Item4);
+        }
+
+        public static Tuple<T1, T2> Map<T1, T2>(this Tuple<T1, T2> t, Func<T1, T1> f1, Func<T2, T2> f2)
+        {
+            return Tuple.Create(f1(t.Item1), f2(t.Item2));
+        }
+
+        public static Tuple<T1, T2, T3> Map<T1, T2, T3>(this Tuple<T1, T2, T3> t, Func<T1, T1> f1, Func<T2, T2> f2, Func<T3, T3> f3)
+        {
+            return Tuple.Create(f1(t.Item1), f2(t.Item2), f3(t.Item3));
+        }
+
+        public static Tuple<T1, T2, T3, T4> Map<T1, T2, T3, T4>(this Tuple<T1, T2, T3, T4> t, Func<T1, T1> f1, Func<T2, T2> f2, Func<T3, T3> f3, Func<T4, T4> f4)
+        {
+            return Tuple.Create(f1(t.Item1), f2(t.Item2), f3(t.Item3), f4(t.Item4));
         }
     }
 
