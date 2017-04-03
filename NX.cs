@@ -82,14 +82,6 @@ namespace NX
         }
     }
 
-    public static class ExprNX
-    {
-        public static T Block<T>(Func<T> f)
-        {
-            return f();
-        }
-    }
-
     public class StringBuilderNX
     {
         string buf;
@@ -166,6 +158,21 @@ namespace NX
         public static IEnumerable<T> Seq<T>(params T[] ts)
         {
             return ts;
+        }
+
+        public static VTuple<T, U> VTuple<T, U>(T l, U r)
+        {
+            return new VTuple<T, U>(l, r);
+        }
+
+        public static VTuple<T, U, V> VTuple<T, U, V>(T l, U c, V r)
+        {
+            return new VTuple<T, U, V>(l, c, r);
+        }
+
+        public static VTuple<T, U, V, W> VTuple<T, U, V, W>(T l, U cl, V cr, W r)
+        {
+            return new VTuple<T, U, V, W>(l, cl, cr, r);
         }
     }
 
@@ -1167,6 +1174,131 @@ namespace NX
         }
     }
 
+    public struct VTuple<T, U>
+    {
+        public readonly T Item1;
+        public readonly U Item2;
+
+        public VTuple(T l, U r)
+        {
+            Item1 = l; Item2 = r;
+        }
+    }
+
+    public struct VTuple<T, U, V>
+    {
+        public readonly T Item1;
+        public readonly U Item2;
+        public readonly V Item3;
+
+        public VTuple(T l, U c, V r)
+        {
+            Item1 = l;
+            Item2 = c;
+            Item3 = r;
+        }
+    }
+
+    public struct VTuple<T, U, V, W>
+    {
+        public readonly T Item1;
+        public readonly U Item2;
+        public readonly V Item3;
+        public readonly W Item4;
+
+        public VTuple(T l, U cl, V cr, W r)
+        {
+            Item1 = l;
+            Item2 = cl;
+            Item3 = cr;
+            Item4 = r;
+        }
+    }
+
+    public static class VTupleExtensions
+    {
+        public static VTuple<T, U> Create<T, U>(T l, U r)
+        {
+            return new VTuple<T, U>(l, r);
+        }
+
+        public static VTuple<T, U, V> Create<T, U, V>(T l, U c, V r)
+        {
+            return new VTuple<T, U, V>(l, c, r);
+        }
+
+        public static VTuple<T, U, V, W> Create<T, U, V, W>(T l, U cl, V cr, W r)
+        {
+            return new VTuple<T, U, V, W>(l, cl, cr, r);
+        }
+
+        public static TR Merge <T1, T2, TR>(this VTuple<T1, T2> t, Func<T1, T2, TR> f)
+        {
+            return f(t.Item1, t.Item2);
+        }
+
+        public static TR Merge <T1, T2, T3, TR>(this VTuple<T1, T2, T3> t, Func<T1, T2, T3, TR> f)
+        {
+            return f(t.Item1, t.Item2, t.Item3);
+        }
+
+        public static TR Merge <T1, T2, T3, T4, TR>(this VTuple<T1, T2, T3, T4> t, Func<T1, T2, T3, T4, TR> f)
+        {
+            return f(t.Item1, t.Item2, t.Item3, t.Item4);
+        }
+
+        public static VTuple<T1, T2> Map<T1, T2>(this VTuple<T1, T2> t, Func<T1, T1> f1, Func<T2, T2> f2)
+        {
+            return New.VTuple(f1(t.Item1), f2(t.Item2));
+        }
+
+        public static VTuple<T1, T2, T3> Map<T1, T2, T3>(this VTuple<T1, T2, T3> t, Func<T1, T1> f1, Func<T2, T2> f2, Func<T3, T3> f3)
+        {
+            return New.VTuple(f1(t.Item1), f2(t.Item2), f3(t.Item3));
+        }
+
+        public static VTuple<T1, T2, T3, T4> Map<T1, T2, T3, T4>(this VTuple<T1, T2, T3, T4> t, Func<T1, T1> f1, Func<T2, T2> f2, Func<T3, T3> f3, Func<T4, T4> f4)
+        {
+            return New.VTuple(f1(t.Item1), f2(t.Item2), f3(t.Item3), f4(t.Item4));
+        }
+
+        public static T Nth<T>(this VTuple<T, T> t, int i)
+        {
+            if (i == 0)
+                return t.Item1;
+            else if (i == 1)
+                return t.Item2;
+            else
+                throw new IndexOutOfRangeException(i + " is out of range " + string.Format("(VTuple<{0}, {0}>)", typeof(T).Name));
+        }
+
+        public static T Nth<T>(this VTuple<T, T, T> t, int i)
+        {
+            if (i == 0)
+                return t.Item1;
+            else if (i == 1)
+                return t.Item2;
+            else if (i == 2)
+                return t.Item3;
+            else
+                throw new IndexOutOfRangeException(i + " is out of range " + string.Format("(VTuple<{0}, {0}, {0}>)", typeof(T).Name));
+        }
+
+        public static T Nth<T>(this VTuple<T, T, T, T> t, int i)
+        {
+            if (i == 0)
+                return t.Item1;
+            else if (i == 1)
+                return t.Item2;
+            else if (i == 2)
+                return t.Item3;
+            else if (i == 3)
+                return t.Item4;
+            else
+                throw new IndexOutOfRangeException(i + " is out of range " + string.Format("(VTuple<{0}, {0}, {0}>)", typeof(T).Name));
+        }
+    }
+
     public static class TupleNX
     {
         public static TR Merge <T1, T2, TR>(this Tuple<T1, T2> t, Func<T1, T2, TR> f)
@@ -1197,6 +1329,42 @@ namespace NX
         public static Tuple<T1, T2, T3, T4> Map<T1, T2, T3, T4>(this Tuple<T1, T2, T3, T4> t, Func<T1, T1> f1, Func<T2, T2> f2, Func<T3, T3> f3, Func<T4, T4> f4)
         {
             return Tuple.Create(f1(t.Item1), f2(t.Item2), f3(t.Item3), f4(t.Item4));
+        }
+
+        public static T Nth<T>(this Tuple<T, T> t, int i)
+        {
+            if (i == 0)
+                return t.Item1;
+            else if (i == 1)
+                return t.Item2;
+            else
+                throw new IndexOutOfRangeException(i + " is out of range " + string.Format("(Tuple<{0}, {0}>)", typeof(T).Name));
+        }
+
+        public static T Nth<T>(this Tuple<T, T, T> t, int i)
+        {
+            if (i == 0)
+                return t.Item1;
+            else if (i == 1)
+                return t.Item2;
+            else if (i == 2)
+                return t.Item3;
+            else
+                throw new IndexOutOfRangeException(i + " is out of range " + string.Format("(Tuple<{0}, {0}, {0}>)", typeof(T).Name));
+        }
+
+        public static T Nth<T>(this Tuple<T, T, T, T> t, int i)
+        {
+            if (i == 0)
+                return t.Item1;
+            else if (i == 1)
+                return t.Item2;
+            else if (i == 2)
+                return t.Item3;
+            else if (i == 3)
+                return t.Item4;
+            else
+                throw new IndexOutOfRangeException(i + " is out of range " + string.Format("(Tuple<{0}, {0}, {0}>)", typeof(T).Name));
         }
     }
 
