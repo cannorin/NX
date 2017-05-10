@@ -1107,6 +1107,16 @@ namespace NX
             return value.Some();
         }
 
+        public static IEnumerable<T> ToSeq<T>(this Option<T> a)
+        {
+            return a.Map(x => New.Seq(x)).DefaultLazy(() => New.Seq<T>());
+        }
+
+        public static IEnumerable<T> FlattenToSeq<T>(this Option<IEnumerable<T>> a)
+        {
+            return a.DefaultLazy(() => New.Seq<T>());
+        }
+
         /// <summary>
         /// Alias of <code>TryMap</code>.
         /// </summary>
