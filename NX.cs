@@ -31,7 +31,7 @@ using System.Diagnostics;
 
 namespace NX
 {
-    internal class TComparer<T> : IComparer<T>
+    public class TComparer<T> : IComparer<T>
     {
         public Func<T, T, int> Comparer { get; private set; }
 
@@ -46,7 +46,7 @@ namespace NX
         }
     }
 
-    internal static class TComparer
+    public static class TComparer
     {
         public static TComparer<T> Create<T>(Func<T, T, int> f)
         {
@@ -54,7 +54,7 @@ namespace NX
         }
     }
 
-    internal class TEquialityComparer<T> : IEqualityComparer<T>
+    public class TEquialityComparer<T> : IEqualityComparer<T>
     {
         public Func<T, T, bool> Comparer { get; private set; }
 
@@ -74,7 +74,7 @@ namespace NX
         }
     }
 
-    internal static class TEquialityComparer
+    public static class TEquialityComparer
     {
         public static TEquialityComparer<T> Create<T> (Func<T, T, bool> f)
         {
@@ -82,7 +82,7 @@ namespace NX
         }
     }
 
-    internal class StringBuilderNX
+    public class StringBuilderNX
     {
         string buf;
 
@@ -114,7 +114,7 @@ namespace NX
         }
     }
 
-    internal static class StringNX
+    public static class StringNX
     {
         public static string[] Split(this string s, bool removeEmptyEntries, params string[] seps)
         {
@@ -148,7 +148,7 @@ namespace NX
         }
     }
 
-    internal static class New
+    public static class New
     {
         public static T[] Array<T>(params T[] ts)
         {
@@ -176,7 +176,7 @@ namespace NX
         }
     }
 
-    internal static class Seq
+    public static class Seq
     {
         public static IEnumerable<string> EnumerateLines(this StreamReader sr)
         {
@@ -571,7 +571,7 @@ namespace NX
         NoChange
     }
 
-    internal class DiffItem<T>
+    public class DiffItem<T>
     {
         public T Item { get; private set; }
 
@@ -584,7 +584,7 @@ namespace NX
         }
     }
 
-    internal class Diff<T>
+    public class Diff<T>
     {
         public IEnumerable<DiffItem<T>> Items { get; private set; }
 
@@ -699,7 +699,7 @@ namespace NX
         }
     }
 
-    internal static class EnumNX
+    public static class EnumNX
     {
         public static T Parse<T>(object s)
         {
@@ -707,7 +707,7 @@ namespace NX
         }
     }
 
-    internal class Using<T>
+    public class Using<T>
         where T : IDisposable
     {
         public T Source { get; set; }
@@ -718,7 +718,7 @@ namespace NX
         }
     }
 
-    internal static class Using
+    public static class Using
     {
         public static Using<T> Use<T>(this T source)
             where T : IDisposable
@@ -769,7 +769,7 @@ namespace NX
         }
     }
 
-    internal struct Option<T> : IEquatable<Option<T>>
+    public struct Option<T> : IEquatable<Option<T>>
     {
         public bool HasValue { get; private set; }
 
@@ -902,7 +902,7 @@ namespace NX
         }
     }
 
-    internal struct DummyNX
+    public struct DummyNX
     {
 
     }
@@ -938,7 +938,7 @@ namespace NX
         }
     }
 
-    internal static class Option
+    public static class Option
     {
         /// <summary>
         /// <code>Some(null)</code> will be <code>None</code>.
@@ -1205,7 +1205,7 @@ namespace NX
         }
     }
 
-    internal struct VTuple<T, U>
+    public struct VTuple<T, U>
     {
         public readonly T Item1;
         public readonly U Item2;
@@ -1216,7 +1216,7 @@ namespace NX
         }
     }
 
-    internal struct VTuple<T, U, V>
+    public struct VTuple<T, U, V>
     {
         public readonly T Item1;
         public readonly U Item2;
@@ -1230,7 +1230,7 @@ namespace NX
         }
     }
 
-    internal struct VTuple<T, U, V, W>
+    public struct VTuple<T, U, V, W>
     {
         public readonly T Item1;
         public readonly U Item2;
@@ -1246,7 +1246,7 @@ namespace NX
         }
     }
 
-    internal static class VTupleExtensions
+    public static class VTupleExtensions
     {
         public static VTuple<T, U> Create<T, U>(T l, U r)
         {
@@ -1330,7 +1330,7 @@ namespace NX
         }
     }
 
-    internal static class TupleNX
+    public static class TupleNX
     {
         public static TR Merge <T1, T2, TR>(this Tuple<T1, T2> t, Func<T1, T2, TR> f)
         {
@@ -1399,7 +1399,7 @@ namespace NX
         }
     }
 
-    internal static class StreamNX
+    public static class StreamNX
     {
         public static void WriteString(this Stream stream, string value)
         {
@@ -1414,7 +1414,7 @@ namespace NX
         }
     }
 
-    internal static class Shell
+    public static class Shell
     {
         public static string GetUnixEnvironmentVariable(string variable)
         {
@@ -1451,7 +1451,7 @@ namespace NX
         }
     }
 
-    internal static class ConsoleNX
+    public static class ConsoleNX
     {
         public static void ColoredWrite(string s, ConsoleColor foreground, params object[] args)
         {
