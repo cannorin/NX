@@ -1079,6 +1079,19 @@ namespace NX
                 none();
         }
 
+        public static T AbortErrorOrNone<T>(this Option<T> a, Action<Exception> err, Action none)
+        {
+            if (a.HasValue)
+                return a.Value;
+            else if (a.HasException)
+                err(a.InnerException);
+            else
+                none();
+            throw new InvalidOperationException("error handler or none handler did not abort the execution!");
+        }
+
+
+
         public static Option<T> Filter<T>(this Option<T> a, Func<T, bool> pred)
         {
             return a.Match(x => pred(x), () => false) ? a : None;
