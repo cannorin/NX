@@ -130,9 +130,9 @@ namespace NX
             return a.HasValue ? a : b;
         }
 
-        public static Option<Tuple<T, T>> operator &(Option<T> a, Option<T> b)
+        public static Option<ValueTuple<T, T>> operator &(Option<T> a, Option<T> b)
         {
-            return (a.HasValue && b.HasValue) ? Tuple.Create(a.Value, b.Value).Some() : Option.None;
+            return (a.HasValue && b.HasValue) ? ValueTuple.Create(a.Value, b.Value).Some() : Option.None;
         }
 
         public static bool operator true(Option<T> a)
@@ -303,10 +303,10 @@ namespace NX
                 return new Either<T, U>(def);
         }
 
-        public static Option<Tuple<T, U>> And<T, U>(this Option<T> a, Option<U> b)
+        public static Option<ValueTuple<T, U>> And<T, U>(this Option<T> a, Option<U> b)
         {
             if(a.HasValue && b.HasValue)
-                return Option.Some(Tuple.Create(a.Value, b.Value));
+                return Option.Some(ValueTuple.Create(a.Value, b.Value));
             else
                 return Option.None;
         }
@@ -490,9 +490,9 @@ namespace NX
             return xs.Choose(Either.RightOrNone);
         }
 
-        public static Tuple<IEnumerable<T>, IEnumerable<U>> SplitNX<T, U>(this IEnumerable<Either<T, U>> xs)
+        public static ValueTuple<IEnumerable<T>, IEnumerable<U>> SplitNX<T, U>(this IEnumerable<Either<T, U>> xs)
         {
-            return Tuple.Create(xs.Lefts(), xs.Rights());
+            return ValueTuple.Create(xs.Lefts(), xs.Rights());
         }
 
         public static T Unwrap<T>(this Either<T, T> a)
@@ -524,6 +524,13 @@ namespace NX
         {
             
         }
+
+        public NoValueException(Exception e, string message, params object[] args)
+            : base(string.Format(message, args), e)
+        {
+
+        }
+
     }
 
     public struct TryResult<T>
@@ -534,7 +541,7 @@ namespace NX
             get
             {
                 if(HasException)
-                    throw InnerException;
+                    throw new NoValueException(InnerException, "Unhandled exception: '{0}'", InnerException.Message);
                 else
                     return _value;
             }
@@ -724,7 +731,7 @@ namespace NX
         public static T Evaluate<T>(this TryResult<T> a)
         {
             if(a.HasException)
-                throw a.InnerException;
+                throw new NoValueException(a.InnerException, "Unhandled Exception: '{0}'", a.InnerException.Message);
             else
                 return a.Value;
         }
@@ -769,11 +776,6 @@ namespace NX
         public static IEnumerable<T> Init<T>(Func<int, T> f, int n = int.MaxValue)
         {
             return Enumerable.Range(0, n).Map(f);
-        }
-
-        public static IEnumerable<T> Repeat<T>(T a, int n = int.MaxValue)
-        {
-            return n == int.MaxValue ? repeatInf(a) : Enumerable.Repeat(a, n);
         }
 
         public static IEnumerable<bool> Inf(bool b = false)
@@ -889,7 +891,7 @@ namespace NX
             return seq.Reverse().Aggregate(a, f);
         }
 
-        public static IEnumerable<TR> Unfold<T, TR>(this T s, Func<T, Tuple<TR, T>> n)
+        public static IEnumerable<TR> Unfold<T, TR>(this T s, Func<T, ValueTuple<TR, T>> n)
         {
             T x = s;
             while (true)
@@ -1000,12 +1002,12 @@ namespace NX
             return xs.Concat(x.Singleton());
         }
 
-        public static Tuple<IEnumerable<T>, IEnumerable<T>> Partition<T>(this IEnumerable<T> seq, Func<T, bool> f)
+        public static ValueTuple<IEnumerable<T>, IEnumerable<T>> Partition<T>(this IEnumerable<T> seq, Func<T, bool> f)
         {
-            return Tuple.Create(seq.Where(f), seq.Where(x => !f(x)));
+            return ValueTuple.Create(seq.Where(f), seq.Where(x => !f(x)));
         }
 
-        public static T2 Assoc<T1, T2>(this IEnumerable<Tuple<T1, T2>> seq, T1 a)
+        public static T2 Assoc<T1, T2>(this IEnumerable<ValueTuple<T1, T2>> seq, T1 a)
         {
             return seq.First(x => x.Item1.Equals(a)).Item2;
         }
@@ -1015,7 +1017,7 @@ namespace NX
             return seq.First(x => x.Key.Equals(a)).Value;
         }
 
-        public static bool MemAssoc<T1, T2>(this IEnumerable<Tuple<T1, T2>> seq, T1 a)
+        public static bool MemAssoc<T1, T2>(this IEnumerable<ValueTuple<T1, T2>> seq, T1 a)
         {
             return seq.Any(x => x.Item1.Equals(a));
         }
@@ -1025,7 +1027,7 @@ namespace NX
             return seq.Any(x => x.Key.Equals(a));
         }
 
-        public static IEnumerable<Tuple<T1, T2>> RemoveAssoc<T1, T2>(this IEnumerable<Tuple<T1, T2>> seq, T1 a)
+        public static IEnumerable<ValueTuple<T1, T2>> RemoveAssoc<T1, T2>(this IEnumerable<ValueTuple<T1, T2>> seq, T1 a)
         {
             var found = false;
             return seq.SkipWhile(x => !found && (found = x.Item1.Equals(a)));
@@ -1037,9 +1039,9 @@ namespace NX
             return seq.SkipWhile(x => !found && (found = x.Key.Equals(a)));
         }
 
-        public static Tuple<IEnumerable<T1>, IEnumerable<T2>> SplitNX<T1, T2>(this IEnumerable<Tuple<T1, T2>> seq)
+        public static ValueTuple<IEnumerable<T1>, IEnumerable<T2>> SplitNX<T1, T2>(this IEnumerable<ValueTuple<T1, T2>> seq)
         {
-            return Tuple.Create(seq.Map(x => x.Item1), seq.Map(x => x.Item2));
+            return ValueTuple.Create(seq.Map(x => x.Item1), seq.Map(x => x.Item2));
         }
 
         public static KeyValuePair<IEnumerable<T1>, IEnumerable<T2>> SplitNX<T1, T2>(this IEnumerable<KeyValuePair<T1, T2>> seq)
@@ -1047,9 +1049,9 @@ namespace NX
             return new KeyValuePair<IEnumerable<T1>, IEnumerable<T2>>(seq.Map(x => x.Key), seq.Map(x => x.Value));
         }
 
-        public static IEnumerable<Tuple<T1, T2>> CombineNX<T1, T2>(this Tuple<IEnumerable<T1>, IEnumerable<T2>> seq)
+        public static IEnumerable<ValueTuple<T1, T2>> CombineNX<T1, T2>(this ValueTuple<IEnumerable<T1>, IEnumerable<T2>> seq)
         {
-            return CombineTupleNX(seq.Item1, seq.Item2);
+            return CombineValueTupleNX(seq.Item1, seq.Item2);
         }
 
         public static IEnumerable<KeyValuePair<T1, T2>> CombineNX<T1, T2>(this KeyValuePair<IEnumerable<T1>, IEnumerable<T2>> seq)
@@ -1062,9 +1064,9 @@ namespace NX
             return s1.Map2(s2, (x, y) => new KeyValuePair<T1, T2>(x, y));
         }
 
-        public static IEnumerable<Tuple<T1, T2>> CombineTupleNX<T1, T2>(this IEnumerable<T1> s1, IEnumerable<T2> s2)
+        public static IEnumerable<ValueTuple<T1, T2>> CombineValueTupleNX<T1, T2>(this IEnumerable<T1> s1, IEnumerable<T2> s2)
         {
-            return s1.Map2(s2, (x, y) => Tuple.Create(x, y));
+            return s1.Map2(s2, (x, y) => ValueTuple.Create(x, y));
         }
 
         public static IEnumerable<KeyValuePair<T1, T2>> CombineKvpNX<T1, T2>(this IEnumerable<T1> s1, IEnumerable<T2> s2)
@@ -1164,8 +1166,6 @@ namespace NX
 
         public static T Evaluate<T>(this Using<T> source)
         {
-            if(typeof(T).GetInterfaces().Contains(typeof(IDisposable)))
-                throw new InvalidOperationException(string.Format("'{0}' is IDisposable and cannot be evaluated.", typeof(T).Name));
             return source.Source();
         }
     }
