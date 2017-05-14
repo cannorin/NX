@@ -35,19 +35,29 @@ namespace NX
     {
         public bool HasValue { get; private set; }
 
-        public T Value { get; private set; }
+        readonly T _value;
+        public T Value 
+        { 
+            get 
+            { 
+                if(HasValue) 
+                    return _value; 
+                else 
+                    throw new NoValueException("This is None.");
+            } 
+        }
 
         public Option(T a)
         {
             if (a == null)
             {
                 this.HasValue = false;
-                this.Value = default(T);
+                this._value = default(T);
             }
             else
             {
                 this.HasValue = true;
-                this.Value = a;
+                this._value = a;
             }
         }
 
@@ -314,11 +324,27 @@ namespace NX
 
     public struct Either<T, U>
     {
-        T _left;
-        public T Left { get { if(IsLeft) return _left; throw new NoValueException("This is Right<{0}>.", typeof(U).Name); } }
+        readonly T _left;
+        public T Left 
+        { 
+            get 
+            {
+                if(IsLeft) 
+                    return _left; 
+                throw new NoValueException("This is Right<{0}>.", typeof(U).Name); 
+            } 
+        }
         
-        U _right;
-        public U Right { get { if(IsRight) return _right; throw new NoValueException("This is Left<{0}>.", typeof(T).Name); } }
+        readonly U _right;
+        public U Right 
+        { 
+            get 
+            { 
+                if(IsRight) 
+                    return _right; 
+                throw new NoValueException("This is Left<{0}>.", typeof(T).Name); 
+            }
+        }
         
         public bool IsLeft { get; private set; }
         public bool IsRight { get { return !IsLeft; } }
@@ -468,6 +494,27 @@ namespace NX
         {
             return Tuple.Create(xs.Lefts(), xs.Rights());
         }
+
+        public static T Unwrap<T>(this Either<T, T> a)
+        {
+            if(a.IsLeft)
+                return a.Left;
+            return a.Right;
+        }
+
+        public static Option<T> Unwrap<T>(this Either<T, Unit> a)
+        {
+            if(a.IsLeft)
+                return Option.Some(a.Left);
+            return Option.None;
+        }
+
+        public static Option<T> Unwrap<T>(this Either<Unit, T> a)
+        {
+            if(a.IsRight)
+                return Option.Some(a.Right);
+            return Option.None;
+        }
     }
 
     public class NoValueException : Exception
@@ -481,7 +528,7 @@ namespace NX
 
     public struct TryResult<T>
     {
-        T _value;
+        readonly T _value;
         public T Value
         {
             get
@@ -494,21 +541,30 @@ namespace NX
         }
 
         public readonly bool HasException;
-        
-        public readonly Exception InnerException;
+       
+        readonly Exception _e;
+        public Exception InnerException
+        {
+            get
+            {
+                if(HasException)
+                    return _e;
+                throw new NoValueException("This is Success<{0}>.", typeof(T).Name);
+            }
+        }
 
         public TryResult(T value)
         {
             _value = value;
             HasException = false;
-            InnerException = null;
+            _e = null;
         }
 
         public TryResult(Exception e, Unit dummy)
         {
             _value = default(T);
             HasException = true;
-            InnerException = e;
+            _e = e;
         }
 
         public override string ToString()
@@ -742,12 +798,12 @@ namespace NX
             return seq.Reverse();
         }
 
-        public static IEnumerable<T> Append<T>(this IEnumerable<T> s1, IEnumerable<T> s2)
+        public static IEnumerable<T> AppendNX<T>(this IEnumerable<T> s1, IEnumerable<T> s2)
         {
             return s1.Concat(s2);
         }
 
-        public static IEnumerable<T> RevAppend<T>(this IEnumerable<T> s1, IEnumerable<T> s2)
+        public static IEnumerable<T> RevAppendNX<T>(this IEnumerable<T> s1, IEnumerable<T> s2)
         {
             return s1.Reverse().Concat(s2);
         }
@@ -914,6 +970,16 @@ namespace NX
             return seq.Where(x => !f(x));
         }
 
+        public static IEnumerable<T> Cons<T>(this T x, IEnumerable<T> xs)
+        {
+            return x.Singleton().Concat(xs);
+        }
+
+        public static IEnumerable<T> Snoc<T>(this IEnumerable<T> xs, T x)
+        {
+            return xs.Concat(x.Singleton());
+        }
+
         public static Tuple<IEnumerable<T>, IEnumerable<T>> Partition<T>(this IEnumerable<T> seq, Func<T, bool> f)
         {
             return Tuple.Create(seq.Where(f), seq.Where(x => !f(x)));
@@ -1005,6 +1071,85 @@ namespace NX
         }
     }
     
+    public class Using<T>
+    {
+        public Func<T> Source { get; set; }
+
+        public Using(Func<T> source)
+        {
+            Source = source;
+        }
+    }
+
+    public static class Using
+    {
+        public static Using<T> Use<T>(this T source)
+            where T : IDisposable
+        {
+            return new Using<T>(() => source);
+        }
+
+        public static Using<TR> Map<T, TR>(this Using<T> source, Func<T, TR> selector)
+            where T : IDisposable
+        {
+            return new Using<TR>(() => {
+                using(var x = source.Source())
+                    return selector(x);
+            });
+        }
+
+        public static Using<TR> Map2<T1, T2, TR>(this Using<T1> a, Using<T2> b, Func<T1, T2, TR> f)
+            where T1 : IDisposable
+            where T2 : IDisposable
+        {
+            return new Using<TR>(() => {
+                using(var x = a.Source())
+                using(var y = b.Source())
+                    return f(x, y);
+            });
+        }
+
+        public static Using<TR> SelectMany<T, T2, TR>
+        (this Using<T> source, Func<T, Using<T2>> second, Func<T, T2, TR> selector)
+            where T : IDisposable
+            where T2 : IDisposable
+        {
+            return Map2(source, source.Map(x => second(x).Source()), selector);
+        }
+
+        public static void SelectMany<T, T2>
+        (this Using<T> source, Func<T, Using<T2>> second, Action<T, T2> selector)
+            where T : IDisposable
+            where T2 : IDisposable
+        {
+            SelectMany(source, second, (x, y) =>
+            {
+                selector(x, y);
+                return Unit.Value;
+            });
+        }
+
+        public static Using<TR> Select<T, TR>(this Using<T> source, Func<T, TR> selector)
+            where T : IDisposable
+        {
+            return source.Map(selector);
+        }
+
+        public static void Do<T>(this Using<T> source, Action<T> f)
+            where T : IDisposable
+        {
+            using(var x = source.Source())
+                f(x);
+        }
+
+        public static T Evaluate<T>(this Using<T> source)
+        {
+            if(typeof(T).GetInterfaces().Contains(typeof(IDisposable)))
+                throw new InvalidOperationException(string.Format("'{0}' is IDisposable and cannot be evaluated.", typeof(T).Name));
+            return source.Source();
+        }
+    }
+
     public struct DummyNX
     {
 
@@ -1038,6 +1183,30 @@ namespace NX
             {
                 return new Unit();
             }
+        }
+    }
+
+    public static class Nx
+    {
+        public static Unit Ignore<T>(T _)
+        {
+            return Unit.Value;
+        }
+
+        public static TryResult<T> Try<T>(Func<T> f)
+        {
+            return TryNX.Try(f);
+        }
+
+        public static TryResult<Unit> Try(Action f)
+        {
+            return TryNX.Try(f);
+        }
+
+        public static Using<T> Use<T>(Func<T> f)
+            where T : IDisposable
+        {
+            return new Using<T>(f);
         }
     }
 
