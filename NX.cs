@@ -582,6 +582,41 @@ namespace NX
                 return new TryResult<T>(c((TE)InnerException));
             else return this;
         }
+
+        public TryResult<T> CatchWhen<TE>(Func<TE, bool> cond, Func<TE, T> c)
+            where TE : Exception
+        {
+            if(HasException && InnerException is TE)
+            {
+                var e = (TE)InnerException;
+                if(cond(e))
+                    return new TryResult<T>(c(e));
+            }
+            return this;
+        }
+
+        public TryResult<Unit> Catch<TE>(Action<TE> c)
+            where TE : Exception
+        {
+            if(HasException && InnerException is TE)
+            {
+                c((TE)InnerException);
+                return new TryResult<Unit>(Unit.Value);
+            }
+            return new TryResult<Unit>(InnerException, Unit.Value);
+        }
+
+        public TryResult<Unit> CatchWhen<TE>(Func<TE, bool> cond, Action<TE> c)
+            where TE : Exception
+        {
+            if(HasException && InnerException is TE)
+            {
+                var e = (TE)InnerException;
+                if(cond(e))
+                    return new TryResult<Unit>(Unit.Value);
+            }
+            return new TryResult<Unit>(InnerException, Unit.Value);
+        }
     }
 
     public static class TryNX
@@ -791,21 +826,6 @@ namespace NX
         public static int IndexOf<T>(this IEnumerable<T> seq, T a)
         {
             return seq.IndexOf(a, EqualityComparer<T>.Default);
-        }
-
-        public static IEnumerable<T> Rev<T>(this IEnumerable<T> seq)
-        {
-            return seq.Reverse();
-        }
-
-        public static IEnumerable<T> AppendNX<T>(this IEnumerable<T> s1, IEnumerable<T> s2)
-        {
-            return s1.Concat(s2);
-        }
-
-        public static IEnumerable<T> RevAppendNX<T>(this IEnumerable<T> s1, IEnumerable<T> s2)
-        {
-            return s1.Reverse().Concat(s2);
         }
 
         public static IEnumerable<T> Flatten<T>(this IEnumerable<IEnumerable<T>> seq)
