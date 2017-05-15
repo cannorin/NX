@@ -683,7 +683,14 @@ namespace NX
             if(a.HasException)
                 return new TryResult<U>(a.InnerException, Unit.Value);
             else
-                return new TryResult<U>(f(a.Value));
+                try
+                {
+                    return new TryResult<U>(f(a.Value));
+                }
+                catch(Exception e)
+                {
+                    return new TryResult<U>(e, Unit.Value);
+                }
         }
 
         public static TryResult<U> Select<T, U>(this TryResult<T> a, Func<T, U> f)
@@ -698,7 +705,14 @@ namespace NX
                 if(b.HasException)
                     return new TryResult<V>(b.InnerException, Unit.Value);
                 else
-                    return new TryResult<V>(f(a.Value, b.Value));
+                    try
+                    {
+                        return new TryResult<V>(f(a.Value, b.Value));
+                    }
+                    catch(Exception e)
+                    {
+                        return new TryResult<V>(e, Unit.Value);
+                    }
             }
             else
                 return new TryResult<V>(a.InnerException, Unit.Value);
@@ -1197,6 +1211,10 @@ namespace NX
             return "";
         }
 
+        public void ToVoid()
+        {
+        }
+
         public static Unit Value
         {
             get
@@ -1208,9 +1226,8 @@ namespace NX
 
     public static class Nx
     {
-        public static Unit Ignore<T>(T _)
+        public static void Ignore<T>(this T _)
         {
-            return Unit.Value;
         }
 
         public static TryResult<T> Try<T>(Func<T> f)
@@ -1280,5 +1297,14 @@ namespace NX
             return new TEquialityComparer<T>(f);
         }
     }
+
+    public static class EnumNX
+    {
+        public static T Parse<T>(object s)
+        {
+            return (T)Enum.Parse(typeof(T), s.ToString());
+        }
+    }
+
 }
 
