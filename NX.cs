@@ -610,7 +610,10 @@ namespace NX
                 c((TE)InnerException);
                 return new TryResult<Unit>(Unit.Value);
             }
-            return new TryResult<Unit>(InnerException, Unit.Value);
+            else if(HasException)
+                return new TryResult<Unit>(InnerException, Unit.Value);
+            else 
+                return new TryResult<Unit>(Unit.Value);
         }
 
         public TryResult<Unit> CatchWhen<TE>(Func<TE, bool> cond, Action<TE> c)
@@ -622,7 +625,33 @@ namespace NX
                 if(cond(e))
                     return new TryResult<Unit>(Unit.Value);
             }
-            return new TryResult<Unit>(InnerException, Unit.Value);
+            if(HasException)
+                return new TryResult<Unit>(InnerException, Unit.Value);
+            else
+                return new TryResult<Unit>(Unit.Value);
+        }
+        
+        public TryResult<T> Abort<TE>(Action<TE> c)
+            where TE : Exception
+        {
+            if(HasException && InnerException is TE)
+            {
+                c((TE)InnerException);
+                throw new InvalidOperationException("Aborted by TryResult.Abort.", InnerException);
+            }
+            return this;
+        }
+
+        public TryResult<T> AbortWhen<TE>(Func<TE, bool> cond, Action<TE> c)
+            where TE : Exception
+        {
+            if(HasException && InnerException is TE)
+            {
+                var e = (TE)InnerException;
+                if(cond(e))
+                    throw new InvalidOperationException("Aborted by TryResult.Abort.", InnerException);
+            }
+            return this;
         }
     }
 
